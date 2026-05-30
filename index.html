@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aiman Korean — Certificates</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: #FAFAF8; min-height: 100vh; }
@@ -14,26 +13,19 @@
     .topbar-title { font-size: 15px; font-weight: 700; color: #1a1a1a; }
     .topbar-sub { font-size: 11px; color: #C0392B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
     .content { padding: 16px; }
-    .filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
-    .filter-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; background: #F2F2F0; color: #6B6B6B; }
-    .filter-btn.active { background: #FDECEA; color: #C0392B; }
+    .count { font-size: 12px; color: #6B6B6B; margin-bottom: 12px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer; }
     .card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; background: #f0f0f0; }
-    .card-info { padding: 10px 12px; }
-    .card-name { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
-    .card-course { font-size: 11px; color: #C0392B; font-weight: 500; }
-    .card-date { font-size: 10px; color: #6B6B6B; margin-top: 2px; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
     .modal-overlay.open { display: flex; }
-    .modal-img { max-width: 100%; max-height: 90vh; border-radius: 12px; object-fit: contain; }
-    .modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; color: white; font-size: 18px; cursor: pointer; }
+    .modal-img { max-width: 100%; max-height: 95vh; border-radius: 8px; object-fit: contain; }
+    .modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .loading { text-align: center; padding: 60px 20px; color: #6B6B6B; font-size: 14px; grid-column: 1/-1; }
-    .count { font-size: 12px; color: #6B6B6B; margin-bottom: 12px; }
-    .progress { text-align: center; padding: 20px; color: #6B6B6B; font-size: 12px; grid-column: 1/-1; }
   </style>
 </head>
 <body>
+
   <div class="topbar">
     <svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
       <circle cx="65" cy="65" r="62" fill="white" stroke="#C0392B" stroke-width="3"/>
@@ -55,14 +47,9 @@
   </div>
 
   <div class="content">
-    <div class="filter-row">
-      <button class="filter-btn active" onclick="filter('all', this)">All 🎓</button>
-      <button class="filter-btn" onclick="filter('TOPIK 1', this)">TOPIK 1</button>
-      <button class="filter-btn" onclick="filter('TOPIK 2', this)">TOPIK 2</button>
-    </div>
     <div class="count" id="count"></div>
     <div class="grid" id="grid">
-      <div class="loading">Loading certificates... 🎓</div>
+      <div class="loading">Loading... 🎓</div>
     </div>
   </div>
 
@@ -72,92 +59,32 @@
   </div>
 
   <script>
-    const TOKEN = '8997468016:AAHCk4JHvxGbswpeLxu_Fm7Ko9o1FunM4ag';
-    const CHANNEL_ID = '-1003711591036';
-    let allPhotos = [];
-    let currentFilter = 'all';
+    const REPO = 'zufarsayfullo-sys/aiman-certificates';
+    const FOLDER = '';
+    const BRANCH = 'main';
 
     async function loadCertificates() {
-      const grid = document.getElementById('grid');
-      const photos = [];
-
       try {
-        // Try fetching messages by ID from 1 to 200
-        grid.innerHTML = '<div class="progress">Loading... 0%</div>';
-        const MAX_ID = 200;
-        let found = 0;
+        const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/${FOLDER}?ref=${BRANCH}`);
+        const files = await resp.json();
 
-        for (let msgId = 1; msgId <= MAX_ID; msgId++) {
-          // Update progress every 20 messages
-          if (msgId % 20 === 0) {
-            grid.innerHTML = `<div class="progress">Loading... ${Math.round(msgId/MAX_ID*100)}%</div>`;
-          }
+        const images = files.filter(f => f.name.match(/\.(jpg|jpeg|png|webp)$/i));
 
-          try {
-            const resp = await fetch(
-              `https://api.telegram.org/bot${TOKEN}/forwardMessage?chat_id=${CHANNEL_ID}&from_chat_id=${CHANNEL_ID}&message_id=${msgId}&disable_notification=true`
-            );
-            const data = await resp.json();
+        document.getElementById('count').textContent = images.length + ' certificate' + (images.length !== 1 ? 's' : '');
 
-            if (data.ok && data.result && data.result.photo) {
-              const photo = data.result.photo[data.result.photo.length - 1];
-              const fileResp = await fetch(`https://api.telegram.org/bot${TOKEN}/getFile?file_id=${photo.file_id}`);
-              const fileData = await fileResp.json();
-
-              if (fileData.ok) {
-                const url = `https://api.telegram.org/file/bot${TOKEN}/${fileData.result.file_path}`;
-                const caption = data.result.caption || '';
-                const lines = caption.split('\n');
-                photos.push({
-                  url,
-                  name: lines[0] || 'Student',
-                  course: lines[1] || 'TOPIK',
-                  date: new Date(data.result.date * 1000).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})
-                });
-                found++;
-
-                // Delete forwarded message to keep channel clean
-                await fetch(`https://api.telegram.org/bot${TOKEN}/deleteMessage?chat_id=${CHANNEL_ID}&message_id=${data.result.message_id}`);
-              }
-            }
-          } catch(e) {
-            // Skip failed message IDs
-          }
+        if (images.length === 0) {
+          document.getElementById('grid').innerHTML = '<div class="loading">No certificates yet 🎓</div>';
+          return;
         }
 
-        allPhotos = photos;
-        renderPhotos();
+        document.getElementById('grid').innerHTML = images.map(f => `
+          <div class="card" onclick="openModal('${f.download_url}')">
+            <img src="${f.download_url}" alt="${f.name}" loading="lazy"/>
+          </div>`).join('');
 
       } catch(err) {
-        grid.innerHTML = '<div class="loading">Could not load. Try again later.</div>';
+        document.getElementById('grid').innerHTML = '<div class="loading">Could not load. Try again.</div>';
       }
-    }
-
-    function renderPhotos() {
-      const grid = document.getElementById('grid');
-      const count = document.getElementById('count');
-      const filtered = currentFilter === 'all' ? allPhotos : allPhotos.filter(p => p.course.includes(currentFilter));
-      count.textContent = filtered.length + ' certificate' + (filtered.length !== 1 ? 's' : '');
-      if (filtered.length === 0) {
-        grid.innerHTML = '<div class="loading">No certificates yet 🎓</div>';
-        return;
-      }
-      grid.innerHTML = filtered.map(p => `
-        <div class="card" onclick="openModal('${p.url}')">
-          <img src="${p.url}" alt="${p.name}" loading="lazy"/>
-          <div class="card-info">
-            <div class="card-name">${p.name}</div>
-            <div class="card-course">${p.course}</div>
-            <div class="card-date">${p.date}</div>
-          </div>
-        </div>`).join('');
-    }
-
-    function filter(type, btn) {
-      currentFilter = type;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderPhotos();
     }
 
     function openModal(url) {
@@ -167,11 +94,6 @@
 
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
-    }
-
-    if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
     }
 
     loadCertificates();
