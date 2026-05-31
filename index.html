@@ -79,8 +79,8 @@
         document.getElementById('count').textContent = files.length + ' certificate' + (files.length !== 1 ? 's' : '');
 
         document.getElementById('grid').innerHTML = files.map(f => `
-          <div class="card" onclick="openModal('https://drive.google.com/uc?export=view&id=${f.id}')">
-            <img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w400" alt="${f.name}" loading="lazy"/>
+          <div class="card" onclick="openModal('https://lh3.googleusercontent.com/d/${f.id}')">
+            <img src="https://lh3.googleusercontent.com/d/${f.id}" alt="${f.name}" loading="lazy"/>
           </div>`).join('');
 
       } catch(err) {
