@@ -62,32 +62,45 @@
   </div>
 
   <script>
-    // ✅ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-qXFZQqiby_lh_2KWK1m3gYEg21o0ac2NAy_iMqFX-LNLPSsxQ_IBcU4qDKjW4JK-/exec';
+    const SUPABASE_URL = 'https://wfpphviaofedotbivtb.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHBodmlhb3NmZWRvdGJpdnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjI0MzgsImV4cCI6MjA5NTYzODQzOH0.HyY11YK2hjmRogCGMKcB_s6EpwGM7OQbFtR7HNTLryQ';
+    const BUCKET = 'Aiman_certificates';
 
     async function loadCertificates() {
       try {
-        const resp = await fetch(APPS_SCRIPT_URL);
+        const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ limit: 200, offset: 0, prefix: '' })
+        });
         const files = await resp.json();
 
-        if (!Array.isArray(files) || files.length === 0) {
+        const images = files.filter(f => f.name && f.name.match(/\.(jpg|jpeg|png|webp)$/i));
+
+        if (!images.length) {
           document.getElementById('count').textContent = '0 certificates';
           document.getElementById('grid').innerHTML = '<div class="loading">No certificates yet 🎓</div>';
           return;
         }
 
-        document.getElementById('count').textContent = files.length + ' certificate' + (files.length !== 1 ? 's' : '');
+        document.getElementById('count').textContent = images.length + ' certificate' + (images.length !== 1 ? 's' : '');
 
-        document.getElementById('grid').innerHTML = files.map(f => `
-          <div class="card" onclick="openModal('https://lh3.googleusercontent.com/d/${f.id}')">
-            <img src="https://lh3.googleusercontent.com/d/${f.id}" alt="${f.name}" loading="lazy"/>
-          </div>`).join('');
+        document.getElementById('grid').innerHTML = images.map(f => {
+          const url = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(f.name)}`;
+          return `
+          <div class="card" onclick="openModal('${url}')">
+            <img src="${url}" alt="${f.name}" loading="lazy"/>
+          </div>`;
+        }).join('');
 
       } catch(err) {
         document.getElementById('grid').innerHTML = `
           <div class="error-box">
             ⚠️ Could not load certificates.<br><br>
-            Make sure you have set up the Google Apps Script and pasted the Web App URL into this file.<br><br>
             <a href="#" onclick="loadCertificates()">Try again</a>
           </div>`;
       }
