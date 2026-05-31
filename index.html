@@ -15,13 +15,16 @@
     .content { padding: 16px; }
     .count { font-size: 12px; color: #6B6B6B; margin-bottom: 12px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer; }
+    .card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+    .card:active { transform: scale(0.97); }
     .card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; background: #f0f0f0; }
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
     .modal-overlay.open { display: flex; }
     .modal-img { max-width: 100%; max-height: 95vh; border-radius: 8px; object-fit: contain; }
     .modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .loading { text-align: center; padding: 60px 20px; color: #6B6B6B; font-size: 14px; grid-column: 1/-1; }
+    .error-box { grid-column: 1/-1; background: #fff3f3; border: 1px solid #ffcccc; border-radius: 12px; padding: 16px; font-size: 13px; color: #c0392b; line-height: 1.6; }
+    .error-box a { color: #c0392b; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -59,31 +62,34 @@
   </div>
 
   <script>
-    const REPO = 'zufarsayfullo-sys/aiman-certificates';
-    const FOLDER = '';
-    const BRANCH = 'main';
+    // ✅ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-qXFZQqiby_lh_2KWK1m3gYEg21o0ac2NAy_iMqFX-LNLPSsxQ_IBcU4qDKjW4JK-/exec';
 
     async function loadCertificates() {
       try {
-        const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/${FOLDER}?ref=${BRANCH}`);
+        const resp = await fetch(APPS_SCRIPT_URL);
         const files = await resp.json();
 
-        const images = files.filter(f => f.name.match(/\.(jpg|jpeg|png|webp)$/i));
-
-        document.getElementById('count').textContent = images.length + ' certificate' + (images.length !== 1 ? 's' : '');
-
-        if (images.length === 0) {
+        if (!Array.isArray(files) || files.length === 0) {
+          document.getElementById('count').textContent = '0 certificates';
           document.getElementById('grid').innerHTML = '<div class="loading">No certificates yet 🎓</div>';
           return;
         }
 
-        document.getElementById('grid').innerHTML = images.map(f => `
-          <div class="card" onclick="openModal('${f.download_url}')">
-            <img src="${f.download_url}" alt="${f.name}" loading="lazy"/>
+        document.getElementById('count').textContent = files.length + ' certificate' + (files.length !== 1 ? 's' : '');
+
+        document.getElementById('grid').innerHTML = files.map(f => `
+          <div class="card" onclick="openModal('https://drive.google.com/uc?export=view&id=${f.id}')">
+            <img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w400" alt="${f.name}" loading="lazy"/>
           </div>`).join('');
 
       } catch(err) {
-        document.getElementById('grid').innerHTML = '<div class="loading">Could not load. Try again.</div>';
+        document.getElementById('grid').innerHTML = `
+          <div class="error-box">
+            ⚠️ Could not load certificates.<br><br>
+            Make sure you have set up the Google Apps Script and pasted the Web App URL into this file.<br><br>
+            <a href="#" onclick="loadCertificates()">Try again</a>
+          </div>`;
       }
     }
 
@@ -94,6 +100,7 @@
 
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
+      document.getElementById('modal-img').src = '';
     }
 
     loadCertificates();
